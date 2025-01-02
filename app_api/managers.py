@@ -57,36 +57,79 @@ class UserManager(Manager):
         return self.create_user(email, password, **extra_fields)
 
 
-class SuperadminManager(models.Manager):
+class RoleBasedManager(UserManager):
+    """Base manager for role-based proxy models."""
+    role = None
+
+    def get_queryset(self):
+        if not self.role:
+            raise NotImplementedError(
+                "Role must be defined in the derived manager.")
+        return super().get_queryset().filter(role=self.role)
+
+    @classmethod
+    def normalize_email(cls, email):
+        """
+        Normalize the email address by lowercasing the domain part of it.
+        """
+        email = email or ""
+        try:
+            email_name, domain_part = email.strip().rsplit("@", 1)
+        except ValueError:
+            pass
+        else:
+            email = email_name + "@" + domain_part.lower()
+        return email
+
+    def create_user(self, email, password=None, **extra_fields):
+        extra_fields["role"] = self.role
+        extra_fields["username"] = self.email.split("@")[0]
+
+        email = self.normalize_email(email)
+
+        return super().create_user(email, password, **extra_fields)
+
+
+class SuperadminManager(RoleBasedManager):
     """Custom manager for Superadmins."""
+
+    role = "superuser"
 
     def get_queryset(self):
         return super().get_queryset().filter(role="superadmin")
 
 
-class AdminManager(models.Manager):
+class AdminManager(RoleBasedManager):
     """Custom manager for Admin proxy model."""
+
+    role = "admin"
 
     def get_queryset(self):
         return super().get_queryset().filter(role="admin")
 
 
-class TeacherManager(models.Manager):
+class TeacherManager(RoleBasedManager):
     """Custom manager for Teacher proxy model."""
+
+    role = "teacher"
 
     def get_queryset(self):
         return super().get_queryset().filter(role="teacher")
 
 
-class StudentManager(models.Manager):
+class StudentManager(RoleBasedManager):
     """Custom manager for Student proxy model."""
+
+    role = "student"
 
     def get_queryset(self):
         return super().get_queryset().filter(role="student")
 
 
-class ParentManager(models.Manager):
+class ParentManager(RoleBasedManager):
     """Custom manager for Parent proxy model."""
+
+    role = "parent"
 
     def get_queryset(self):
         return super().get_queryset().filter(role="parent")
