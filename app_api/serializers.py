@@ -1,8 +1,10 @@
 from django.contrib.auth import get_user_model
-from rest_framework.serializers import ModelSerializer
+from rest_framework.serializers import ModelSerializer, SerializerMethodField
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from rest_framework_simplejwt.views import TokenObtainPairView
 from django.contrib.auth.hashers import make_password
+
+from .models import Subject, Group
 
 User = get_user_model()
 
@@ -32,20 +34,29 @@ class UserSerializer(ModelSerializer):
     class Meta:
         model = User
         exclude = ["last_login", "date_joined", "groups", "user_permissions"]
-        kwargs = {
+        extra_kwargs = {
             "password": {
                 "write_only": True,
             }
         }
 
-    def create(self, validated_data):
+
+class SubjectSerializer(ModelSerializer):
+    students = SerializerMethodField()
+    groups = SerializerMethodField()
+
+    class Meta:
+        model = Subject
+        fields = "__all__"
+
+    def get_students(self, obj):
         """
-        Override the create method to handle password hashing.
+        Returns the count of unique students associated with the subject.
         """
-        password = validated_data.pop("password", None)
-        user = super().create(validated_data)
-        if password:
-            user.password = make_password(password)
-            user.username = user.email.split("@")[0]
-            user.save()
-        return user
+        return User.objects.filter(student_groups__in=obj.group_set.all()).distinct().count()
+
+    def get_groups(self, obj):
+        """
+        Returns the counf of unique group associated with the subject
+        """
+        return Group.objects.filter(subject=obj).count()

@@ -5,6 +5,11 @@ from . import views
 
 router = DefaultRouter()
 
-router.register(prefix="users", viewset=views.UsersViewSet, basename="users")
+router.register(prefix="users",
+                viewset=views.UsersViewSet,
+                basename="users")
+router.register(prefix="subjects",
+                viewset=views.SubjectViewSet,
+                basename="subjects")
 
 urlpatterns = router.urls

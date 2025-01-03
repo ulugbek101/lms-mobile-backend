@@ -42,6 +42,7 @@ class User(AbstractUser):
     role = models.CharField(max_length=10,
                             choices=Roles.choices,
                             default=Roles.STUDENT)
+    student_groups = models.ManyToManyField(to="Group")
 
     objects = UserManager()
     USERNAME_FIELD = "email"
@@ -53,6 +54,23 @@ class User(AbstractUser):
                 fields=["first_name", "last_name"], name="unique_full_name"
             )
         ]
+
+    def save(self, *args, **kwargs):
+        """
+        Override the save method to handle password changes securely.
+        """
+
+        self.username = self.email.split("@")[0]
+
+        if self.pk:
+            existing_user = User.objects.get(pk=self.pk)
+
+            if existing_user.password != self.password:
+                self.set_password(self.password)
+        else:
+            self.set_password(self.password)
+
+        super().save(*args, **kwargs)
 
     def __str__(self) -> str:
         return (
