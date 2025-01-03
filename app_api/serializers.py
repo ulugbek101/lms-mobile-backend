@@ -33,6 +33,29 @@ class MyTokenObtainPairView(TokenObtainPairView):
 class UserSerializer(ModelSerializer):
     class Meta:
         model = User
+        fields = "__all__"
+        extra_kwargs = {
+            "password": {
+                "write_only": True,
+            }
+        }
+
+
+class TeacherSerializer(ModelSerializer):
+    class Meta:
+        model = User
+        exclude = ["last_login", "date_joined", "groups",
+                   "user_permissions", "student_groups"]
+        extra_kwargs = {
+            "password": {
+                "write_only": True,
+            }
+        }
+
+
+class StudentSerializer(ModelSerializer):
+    class Meta:
+        model = User
         exclude = ["last_login", "date_joined", "groups", "user_permissions"]
         extra_kwargs = {
             "password": {
@@ -60,3 +83,19 @@ class SubjectSerializer(ModelSerializer):
         Returns the counf of unique group associated with the subject
         """
         return Group.objects.filter(subject=obj).count()
+
+
+class GroupSerializer(ModelSerializer):
+    teacher = TeacherSerializer()
+    subject = SerializerMethodField()
+    students = SerializerMethodField()
+
+    class Meta:
+        model = Group
+        fields = "__all__"
+
+    def get_subject(self, obj):
+        return obj.subject.name
+
+    def get_students(self, obj):
+        return obj.user_set.filter(role="student").count()
