@@ -1,11 +1,17 @@
 from django.contrib.auth import get_user_model
-from rest_framework.permissions import IsAuthenticated
-from rest_framework.viewsets import ModelViewSet
-from rest_framework.response import Response
 from rest_framework.filters import SearchFilter
+from rest_framework.permissions import IsAuthenticated
+from rest_framework.response import Response
+from rest_framework.viewsets import ModelViewSet
 
-from .serializers import TeacherSerializer, SubjectSerializer, GroupSerializer, UserSerializer
-from .models import Subject, Group, Teacher
+from .models import Group, Student, Subject, Teacher
+from .serializers import (
+    GroupSerializer,
+    StudentSerializer,
+    SubjectSerializer,
+    TeacherSerializer,
+    UserSerializer,
+)
 
 User = get_user_model()
 
@@ -33,6 +39,14 @@ class TeacherViewSet(ModelViewSet):
     search_fields = ["first_name", "last_name", "email"]
 
 
+class StudentViewSet(ModelViewSet):
+    queryset = Student.objects.all()
+    # permission_classes = [IsAuthenticated]
+    serializer_class = StudentSerializer
+    filter_backends = [SearchFilter]
+    search_fields = ["first_name", "last_name", "email"]
+
+
 class SubjectViewSet(ModelViewSet):
     queryset = Subject.objects.all()
     # permission_classes = [IsAuthenticated]
@@ -46,5 +60,9 @@ class GroupViewSet(ModelViewSet):
     # permission_classes = [IsAuthenticated]
     serializer_class = GroupSerializer
     filter_backends = [SearchFilter]
-    search_fields = ["name", "teacher__first_name",
-                     "teacher__last_name", "subject__name"]
+    search_fields = [
+        "name",
+        "teacher__first_name",
+        "teacher__last_name",
+        "subject__name",
+    ]

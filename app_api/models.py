@@ -1,10 +1,17 @@
 from uuid import uuid4
 
+from django.contrib.auth.hashers import check_password, make_password
 from django.contrib.auth.models import AbstractUser
 from django.db import models
 
-from .managers import UserManager, TeacherManager, AdminManager, ParentManager, StudentManager
-from .utils import Roles, LessonDays
+from .managers import (
+    AdminManager,
+    ParentManager,
+    StudentManager,
+    TeacherManager,
+    UserManager,
+)
+from .utils import LessonDays, Roles
 
 
 class User(AbstractUser):
@@ -29,6 +36,7 @@ class User(AbstractUser):
     Methods:
         - __str__: Returns the user's full name if available, otherwise the email.
     """
+
     # id = models.UUIDField(primary_key=True, default=uuid4, editable=False)
     created = models.DateTimeField(auto_now_add=True)
     updated = models.DateTimeField(auto_now=True)
@@ -39,9 +47,7 @@ class User(AbstractUser):
     profile_photo = models.ImageField(
         default="users/user-default.png", upload_to="users/", blank=True
     )
-    role = models.CharField(max_length=10,
-                            choices=Roles.choices,
-                            default=Roles.STUDENT)
+    role = models.CharField(max_length=10, choices=Roles.choices, default=Roles.STUDENT)
     student_groups = models.ManyToManyField(to="Group")
 
     objects = UserManager()
@@ -58,17 +64,17 @@ class User(AbstractUser):
     def save(self, *args, **kwargs):
         """
         Override the save method to handle password changes securely.
+        Hash the password only if it is not already hashed.
         """
-
         self.username = self.email.split("@")[0]
 
         if self.pk:
             existing_user = User.objects.get(pk=self.pk)
-
             if existing_user.password != self.password:
-                self.set_password(self.password)
+                if not check_password(self.password, existing_user.password):
+                    self.password = make_password(self.password)
         else:
-            self.set_password(self.password)
+            self.password = make_password(self.password)
 
         super().save(*args, **kwargs)
 
