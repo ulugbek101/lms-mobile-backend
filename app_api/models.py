@@ -47,7 +47,8 @@ class User(AbstractUser):
     profile_photo = models.ImageField(
         default="users/user-default.png", upload_to="users/", blank=True
     )
-    role = models.CharField(max_length=10, choices=Roles.choices, default=Roles.STUDENT)
+    role = models.CharField(
+        max_length=10, choices=Roles.choices, default=Roles.STUDENT)
     student_groups = models.ManyToManyField(to="Group")
 
     objects = UserManager()
@@ -68,13 +69,8 @@ class User(AbstractUser):
         """
         self.username = self.email.split("@")[0]
 
-        if self.pk:
-            existing_user = User.objects.get(pk=self.pk)
-            if existing_user.password != self.password:
-                if not check_password(self.password, existing_user.password):
-                    self.password = make_password(self.password)
-        else:
-            self.password = make_password(self.password)
+        if self.password and not self.password.startswith(("pbkdf2_", "argon2$", "bcrypt$", "sha1$")):
+            self.set_password(self.password)
 
         super().save(*args, **kwargs)
 

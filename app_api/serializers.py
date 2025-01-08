@@ -30,7 +30,32 @@ class MyTokenObtainPairView(TokenObtainPairView):
     serializer_class = MyTokenObtainPairSerializer
 
 
-class UserSerializer(ModelSerializer):
+class PasswordHashMixin:
+    def create(self, validated_data):
+        # Default to None if not provided
+        password = validated_data.pop("password", None)
+
+        user = super().create(validated_data)
+
+        if password:
+            user.set_password(password)
+            user.save()
+
+        return user
+
+    def update(self, instance, validated_data):
+        password = validated_data.pop("password", None)
+
+        user = super().update(instance, validated_data)
+
+        if password:
+            user.set_password(password)
+            user.save()
+
+        return user
+
+
+class UserSerializer(ModelSerializer, PasswordHashMixin):
     class Meta:
         model = User
         fields = "__all__"
@@ -41,7 +66,7 @@ class UserSerializer(ModelSerializer):
         }
 
 
-class TeacherSerializer(ModelSerializer):
+class TeacherSerializer(ModelSerializer, PasswordHashMixin):
     class Meta:
         model = User
         exclude = ["last_login", "date_joined", "groups",
@@ -53,7 +78,7 @@ class TeacherSerializer(ModelSerializer):
         }
 
 
-class StudentSerializer(ModelSerializer):
+class StudentSerializer(ModelSerializer, PasswordHashMixin):
     class Meta:
         model = User
         exclude = ["last_login", "date_joined", "groups", "user_permissions"]
